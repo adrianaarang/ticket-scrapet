@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ticket Scraper</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="views/app.css">
+</head>
+<body>
+  <div class="wrap">
+
+    <header>
+      <p class="logo-tag">// ticket-scraper v1.0</p>
+      <h1>Encuentra tu <span>entrada</span>.</h1>
+      <p class="subtitle">VividSeats &amp; SeatGeek — sector, fila y precio en segundos.</p>
+    </header>
+
+    <div class="search-card">
+      <p class="search-label">// URL del evento</p>
+      <div class="search-row">
+        <input
+          id="urlInput"
+          class="url-input"
+          type="url"
+          placeholder="https://www.vividseats.com/... o https://seatgeek.com/..."
+          autocomplete="off"
+          spellcheck="false"
+        >
+        <button id="btnSearch" class="btn-search">Buscar entradas</button>
+      </div>
+      <div class="platform-hints">
+        <span>✓ VividSeats</span>
+        <span>✓ SeatGeek</span>
+      </div>
+    </div>
+
+    <div id="state">
+      <div class="state-idle">
+        <div class="icon">🎭</div>
+        <p>Introduce la URL de un evento para empezar</p>
+      </div>
+    </div>
+
+  </div>
+  <script src="views/app.js"></script>
+</body>
+</html>
