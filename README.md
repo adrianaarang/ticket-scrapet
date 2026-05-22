@@ -1,5 +1,10 @@
 # Ticket Scraper
 
+
+<img width="1527" height="805" alt="Captura de pantalla 2026-05-22 160417" src="https://github.com/user-attachments/assets/1753e631-0602-4541-b05e-c3f498d8231e" />
+<img width="1409" height="900" alt="Captura de pantalla 2026-05-22 160541" src="https://github.com/user-attachments/assets/dac9fcfd-d653-4e9c-8992-ed645a1693e4" />
+
+
 Herramienta web en PHP para consultar entradas disponibles en eventos de VividSeats y SeatGeek, clasificadas por sector, fila y precio.
 
 ## Requisitos
@@ -54,7 +59,7 @@ php -S localhost:8000
 
 O con Apache/XAMPP accede directamente a:
 
-```http
+```
 http://localhost/ticket-scraper/index.php
 ```
 
@@ -65,11 +70,27 @@ Pega la URL de un evento de VividSeats o SeatGeek en el campo de búsqueda y pul
 - `https://www.vividseats.com/hamilton-tickets-new-york-richard-rodgers-theatre-new-york-6-23-2026/production/6204797`
 - `https://seatgeek.com/aladdin-tickets/theater/2026-07-15-2-pm/18119434`
 
+### Uso desde CLI
+
+```bash
+# VividSeats
+php scraper.php "https://www.vividseats.com/.../production/6204797"
+
+# SeatGeek
+php scraper.php "https://seatgeek.com/aladdin-tickets/.../18119434"
+
+# Salida JSON (filtrable con jq)
+php scraper.php --json "https://..." | jq '.[] | select(.price < 100)'
+
+# Sin colores (para redirigir a fichero)
+php scraper.php --no-color "https://..." > entradas.txt
+```
+
 ---
 
 ## Estructura del proyecto
 
-```text
+```
 ticket-scraper/
 ├── index.php                    ← Punto de entrada web (sirve el HTML)
 ├── api.php                      ← Endpoint AJAX — recibe URL, devuelve JSON
@@ -106,7 +127,7 @@ ticket-scraper/
 
 ### Flujo de una petición
 
-```text
+```
 Usuario introduce URL
         ↓
     api.php (POST AJAX)
@@ -157,7 +178,7 @@ VividSeats usa Akamai Bot Manager que bloquea IPs de servidores. ZenRows enruta 
 ## Limitaciones conocidas
 
 - **VividSeats — Akamai Bot Manager:** Los servidores de producción son bloqueados con 403. La solución es ZenRows con `premium_proxy=true`. Sin ZenRows, funciona correctamente desde IPs domésticas.
-- **SeatGeek — DataDome:** Detecta Playwright aunque se eliminen las firmas de webdriver. El endpoint `/api/event_listings_v2` devuelve 403. La API REST oficial requiere credenciales de vendedor no disponibles en el plan gratuito. Para producción se necesitaría ScrapingBee o 2Captcha.
+- **SeatGeek — DataDome:** Detecta Playwright aunque se eliminen las firmas de webdriver. Además muestra un slider de verificación en el primer acceso que requiere interacción humana real. El endpoint `/api/event_listings_v2` devuelve 403. La API REST oficial requiere credenciales de vendedor no disponibles en el plan gratuito. Para producción se necesitaría ScrapingBee o 2Captcha.
 
 ---
 
@@ -173,3 +194,68 @@ $this->scrapers = [
     new SeatGeekScraper($http),
     new MiPlataformaScraper($http),
 ];
+```
+
+---
+
+## Seguridad
+
+- Credenciales almacenadas en `.env`, excluido de git mediante `.gitignore`.
+- `api.php` solo acepta peticiones con cabecera `X-Requested-With: XMLHttpRequest`.
+- URLs validadas con `filter_var($url, FILTER_VALIDATE_URL)` antes de procesarse.
+- Salidas HTML escapadas con `htmlspecialchars` para prevenir XSS.
+
+---
+
+## Mejoras futuras
+
+### Resolución de CAPTCHA en SeatGeek
+SeatGeek usa DataDome con un slider de verificación que bloquea Playwright. Las posibles soluciones son:
+
+- **Cookies de sesión reales:** el usuario navega manualmente a SeatGeek una vez, acepta el slider, y exporta las cookies. Playwright las reutiliza en peticiones posteriores saltándose el CAPTCHA.
+- **2Captcha / CapSolver:** servicios de resolución de CAPTCHA por humanos o IA (~$2 por 1.000 resoluciones).
+- **ScrapingBee:** proxy especializado con bypass nativo de DataDome.
+
+### Sistema de caché
+Las entradas de un evento no cambian en segundos. Implementar una caché en fichero o Redis reduciría los tiempos de respuesta de ~15s (Playwright) a menos de 1s para consultas repetidas del mismo evento.
+
+```php
+// Ejemplo: caché en fichero con TTL de 5 minutos
+$cacheKey = md5($url);
+$cachePath = sys_get_temp_dir() . "/tickets_{$cacheKey}.json";
+if (file_exists($cachePath) && time() - filemtime($cachePath) < 300) {
+    return json_decode(file_get_contents($cachePath), true);
+}
+```
+
+### Paginación de resultados
+Actualmente se muestran todos los listings a la vez. Para eventos con cientos de entradas, implementar paginación o scroll infinito mejoraría el rendimiento de la interfaz.
+
+### Exportación de datos
+Añadir botones para exportar los listings en CSV o JSON directamente desde la interfaz web, útil para análisis de precios.
+
+### Alertas de precio
+Permitir al usuario definir un precio máximo y recibir una notificación (email o webhook) cuando aparezca una entrada por debajo de ese umbral.
+
+### Soporte para más plataformas
+La arquitectura basada en `ScraperInterface` permite añadir nuevas plataformas fácilmente. Candidatas naturales:
+
+- **StubHub** — mayor marketplace de entradas del mundo
+- **Ticketmaster** — venta primaria
+- **Viagogo** — popular en Europa
+
+### Tests automatizados
+Añadir tests unitarios con PHPUnit para los scrapers usando fixtures HTML pregrabados, y tests de integración con Playwright que verifiquen el flujo completo end-to-end.
+
+---
+
+## Tecnologías utilizadas
+
+| Tecnología | Uso |
+| :--- | :--- |
+| PHP 8.3 | Backend, scraping HTTP, API endpoint |
+| Node.js + Playwright | Renderizado JS, intercepción XHR |
+| ZenRows | Proxy anti-bot para VividSeats |
+| HTML / CSS / JS | Interfaz web sin frameworks |
+| cURL | Peticiones HTTP en PHP |
+| DOMDocument + DOMXPath | Parsing HTML |
