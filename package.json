@@ -1,0 +1,16 @@
+{
+  "name": "prueba_practica_desarrollador_php_globalexperience_adrianaaranguez",
+  "version": "1.0.0",
+  "description": "Herramienta CLI en PHP para consultar las entradas disponibles en eventos de **VividSeats** y **SeatGeek**, agrupadas por sector, fila y precio.",
+  "main": "scraper.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "playwright": "^1.60.0"
+  }
+}
